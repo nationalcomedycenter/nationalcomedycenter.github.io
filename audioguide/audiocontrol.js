@@ -1,9 +1,9 @@
-let audioQueue = new Array();
-let currentSection = '#lobby';
-let readIndex = 0;
-let sectionIndex = 0;
-let sections = new Array();
-let rate = 1;
+var audioQueue = new Array();
+var currentSection = '#lobby';
+var readIndex = 0;
+var sectionIndex = 0;
+var sections = new Array();
+var rate = 1;
 
 //Set Sections
 console.log($('nav ol').children().each(function(){ sections.push($(this).attr('href'))}));
