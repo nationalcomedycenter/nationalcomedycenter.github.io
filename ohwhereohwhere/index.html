@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title></title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <style>
+          body{
+            padding: 10px;
+            margin: 0;
+          }
+          div{
+            display: inline-block;
+            width: 30%;
+            vertical-align: top;
+          }
+          .loader {
+              border: 10px solid #f3f3f3; /* Light grey */
+              border-top: 10px solid #3498db; /* Blue */
+              border-radius: 50%;
+              width: 100px;
+              height: 100px;
+              animation: spin 1s linear infinite;
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              visibility:hidden;
+          }
+          #search_group{
+            visibility:hidden;
+          }
+
+          @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+          }
+
+        </style>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    </head>
+    <body>
+      <section>
+        <h1 class="page-header"> 🐶 Oh Where, Oh Where... </h1>
+        <div id="search_group" class="input-group">
+          <input type="text" class="form-control" id="search" placeholder="Search for Artist, Person, Show, Project, or Term ...">
+          <span class="input-group-btn">
+            <button class="btn btn-default btn-disable" type="button" id="button" onclick="getArtist()">Go!</button>
+          </span>
+        </div>
+        <div class="loader"></div>
+      <section>
+      <section class="result">
+      </section>
+    </body>
+    <script>
+    let exhibits = [
+      {"Name":"AV1A.02 Create Your Profile","Key":31},
+      {"Name":"AV1A.03 Welcome Wall - Welcome Wall Videos ","Key":341},
+      {"Name":"AV1A.03 Welcome Wall ","Key":342},
+      {"Name":"AV2A.01 George Carlin - Artifact Database","Key":158},
+      {"Name":"AV2A.01 George Carlin - George Carlin's Day Planner Media","Key":309},
+      {"Name":"AV2B.01 Stand-Up Lounge - Grab Bag Videos","Key":171},
+      {"Name":"AV2B.01 Stand-Up Lounge","Key":231},
+      {"Name":"AV2B.03 Late Night: Virtual Camera","Key":331},
+      {"Name":"AV2B.02 Late Night Control Booth - Signature Bits","Key":192},
+      {"Name":"AV2B.02 Late Night Control Booth - Guest Interviews","Key":193},
+      {"Name":"AV2B.02 Late Night Control Booth - Monologues","Key":191},
+      {"Name":"AV2C.02 Hall of Moguls","Key":18},
+      {"Name":"AV2C.03 Virtual Writer's Desk","Key":393},
+      {"Name":"AV2D.01 Sounds Funny","Key":59},
+      {"Name":"AV2D.05 The Movie House","Key":268},
+      {"Name":"AV2D.04 Ham It Up","Key":62},
+      {"Name":"AV2D.08 The TV Room","Key":280},
+      {"Name":"AV2E.01 Dot Comedy","Key":132},
+      {"Name":"AV2E.04 Trending Now","Key":335},
+      {"Name":"AV4A.01 Comedy Continuum","Key":71},
+      {"Name":"AV4A.02 Prop Stars ","Key":228},
+      {"Name":"AV6A.01-10 Honors and Distinctions - Awards","Key":207},
+      {"Name":"AV6A.01-10 Honors and Distinctions - Projects","Key":208},
+      {"Name":"AV6A.01-10 Honors and Distinctions - People","Key":209},
+      {"Name":"AV6A.01-10 Honors and Distinctions - History Spotlights","Key":222},
+      {"Name":"AV7A.01 Comedy Karaoke","Key":104},
+      {"Name":"AV7A.02 Laugh Battle","Key":141},
+      {"Name":"AV7A.03 Act The Part","Key":326},
+      {"Name":"AV8A.01 Dirty Words","Key":317},
+      {"Name":"AV8A.05 Art of the Roast","Key":109},
+      {"Name":"AV9A.01 My Sense of Humor","Key":321},
+      {"Name":"AV9A.03 A Joke To Go","Key":260}
+    ];
+
+    let exhibitData = new Array();
+    let artists;
+    let transcripts;
+    let texts;
+    let dataCalls = 0;
+
+    let artist;
+    let offline = false;
+
+    // Load ArtistKeys
+    dataCalls++;
+
+    $.ajax({
+    url: 'http://192.168.0.2/CMS/JSON/section/2',
+    dataType: 'json',
+    success: function( data ) {
+      artists = data;
+      console.log("Got all Artists.");
+      doneLoading();
+      // Load Latest CMS Data
+      exhibits.forEach(e => {
+        dataCalls++;
+        $.getJSON( "http://192.168.0.2/CMS/JSON/section/"+e.Key, function( data ) {
+            exhibitData.push( {"Name": e.Name,"Data": JSON.stringify(data)});
+            console.log("Got "+e.Name+" Data.");
+            doneLoading();
+        });
+      });
+    },
+    error: function( data ) {
+      alert( "You Are Not On Site! - Offline Mode");
+      artists = [];
+      doneLoading();
+      offline = true;
+    }
+  });
+    dataCalls++;
+    $.getJSON("json/MuseumText.json", function( data ) {
+        texts = data;
+        console.log("Got Museum Text.");
+        doneLoading();
+    });
+
+    dataCalls++;
+    $.getJSON("json/MuseumTranscripts.json", function( data ) {
+        transcripts = data;
+        console.log("Got Museum Transcripts.");
+        doneLoading();
+    });
+
+    function doneLoading(){
+      dataCalls--;
+      if(dataCalls == 0){
+        $(".loader").css('visibility', 'hidden');
+        $("#search_group").css('visibility', 'visible');
+      }else{
+        $(".loader").css('visibility', 'visible');
+        $("#search_group").css('visibility', 'hidden');
+      }
+    }
+
+    function getArtist(){
+      artistName = $('#search').val();
+      console.log("Starting Search for " + artistName +"...");
+      let found = false;
+      $( ".result" ).html("<h3>Artist Database Results:<h3>");
+      artists.forEach(a => {
+        if(a.Name.includes(artistName)){
+          $(".result").append("<a onclick='setArtistByKey("+a.Key+")'>"+a.Key+" : "+a.Name+"</a><br>");
+          found = true;
+        }
+      });
+      if(!found){
+        $( ".result" ).append("<p> Not Found in Artist Database. Continue searching for <a onclick=\"setArtistByName('"+artistName+"')\">"+artistName+"</a> ?<p>");
+      }else{
+        $( ".result" ).append("<p> Continue searching for <a onclick=\"setArtistByName('"+artistName+"')\">"+artistName+"</a> ?<p>");
+      }
+
+      console.log("Artist search Complete.");
+      return false;
+    }
+
+    function setArtistByKey(key){
+      // Get Artist Object with this Key
+      artist = artists.find( x => x.Key == key );
+      $( ".result" ).html("Finding "+ artist.Name +" in Museum...");
+      getLocations();
+    }
+
+    function setArtistByName(name){
+      // Let's give it a shot! Just set the Name.
+      artist={"Name": name};
+      $( ".result" ).html("Finding "+ artist.Name +" in Museum...");
+      getLocations();
+    }
+
+    function getLocations(){
+      // Clear Results
+      $( ".result" ).html("");
+      $( ".result" ).html("<h3> Oh Where, Oh Where is " + artist.Name + " ...<h3>");
+      console.log("Searching locations...");
+      if(!offline){
+        searchCMS();
+      }
+      searchTranscripts();
+      searchText();
+      console.log("Searching Done.");
+    }
+
+    function searchCMS(){
+
+      $(".result").append("<div id='cms_results' class='card'></div>");
+      $("#cms_results").append("<h2>CMS</h2>");
+
+      //Look through CMS
+      exhibitData.forEach(e => {
+          if(e.Name.toUpperCase().includes(artist.Name.toUpperCase())|| e.Data.toUpperCase().includes(artist.Name.toUpperCase())){
+            $("#cms_results").append("<p>"+e.Name+"</p>");
+          }
+      });
+
+    }
+
+    function searchTranscripts(){
+      $(".result").append("<div id='transcript_results' class='card'></div>");
+      $("#transcript_results").append("<h2>Lenses</h2>");
+
+      //Look through Transcripts
+      transcripts.forEach(t => {
+          if(t.Name.toUpperCase().includes(artist.Name.toUpperCase())|| t.Text.toUpperCase().includes(artist.Name.toUpperCase())){
+            $("#transcript_results").append("<p>"+t.Name+"</p>");
+          }
+      });
+    }
+
+    function searchText(){
+      $(".result").append("<div id='text_results' class='card'></div>");
+      $("#text_results").append("<h2>Mural & Written Text</h2>");
+
+      //Look through Text
+      texts.forEach(t => {
+          t.Sections.forEach(s => {
+          if(s.Text.toUpperCase().includes(artist.Name.toUpperCase())|| s.Title.toUpperCase().includes(artist.Name.toUpperCase())){
+            $("#text_results").append("<p>"+t.Name+" - "+s.Title+"</p>");
+          }
+        });
+      });
+    }
+
+
+    </script>
+</html>
